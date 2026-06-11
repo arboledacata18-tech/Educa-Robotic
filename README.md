@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Educa-Robotic
 
 Plataforma educativa de robótica construida con Laravel 13 + React 19 + Inertia.js.
@@ -56,4 +56,3 @@ Abrir http://localhost:8000.
 - **Backend**: Laravel 13, Fortify (auth), SQLite, Pest
 - **Frontend**: React 19, TypeScript, Inertia.js v3, Tailwind CSS v4, shadcn/ui, Vite 8
 - **Extra**: Blockly (editor visual de programación), WebAuthn/Passkeys
->>>>>>> master
