@@ -22,7 +22,7 @@ npm run build
 ## Ejecutar en desarrollo
 
 ```bash
-composer dev
+composer run dev
 ```
 
 Esto levanta concurrentemente el servidor HTTP (`localhost:8000`), el worker de colas, los logs y Vite con HMR.
