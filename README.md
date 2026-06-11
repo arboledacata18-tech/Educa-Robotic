@@ -1,5 +1,4 @@
-
-# Educa-Robotic
+# Robotnow
 
 Plataforma educativa de robótica construida con Laravel 13 + React 19 + Inertia.js.
 

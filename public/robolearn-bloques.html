@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Programación por Bloques - RoboLearn Academy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/blockly.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/blocks_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/javascript_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/msg/es.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Poppins', 'sans-serif'], body: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: { 50: '#EFF6FF', 100: '#DBEAFE', 200: '#BFDBFE', 300: '#93C5FD', 400: '#60A5FA', 500: '#3B82F6', 600: '#2563EB', 700: '#1D4ED8', 800: '#1E40AF', 900: '#1E3A5F' },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+    body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+    .font-heading { font-family: 'Poppins', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); }
+    #blocklyDiv { height: 100%; width: 100%; }
+    .blocklyToolboxDiv { background: #1E3A5F !important; }
+    .blocklyTreeRow { padding: 6px 8px !important; }
+    #simulador {
+      background: #0F172A;
+      background-image: radial-gradient(circle at 25px 25px, rgba(96, 165, 250, 0.05) 1px, transparent 0);
+      background-size: 50px 50px;
+    }
+    .celda { position: absolute; width: 40px; height: 40px; border: 1px solid rgba(96, 165, 250, 0.08); pointer-events: none; }
+    .obstaculo {
+      position: absolute; width: 36px; height: 36px; background: #475569;
+      border-radius: 4px; pointer-events: none; z-index: 2;
+    }
+    .caja {
+      position: absolute; width: 36px; height: 36px; z-index: 5;
+      background: linear-gradient(135deg, #D97706, #92400E);
+      border: 2px solid #F59E0B; border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+      transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: bold; color: white;
+      pointer-events: none;
+    }
+    .caja.en-destino { background: linear-gradient(135deg, #10B981, #047857); border-color: #34D399; box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+    .caja-marca {
+      position: absolute; width: 36px; height: 36px; z-index: 1; pointer-events: none;
+      border: 2px dashed rgba(251, 191, 36, 0.4); border-radius: 8px;
+      background: rgba(251, 191, 36, 0.05);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .caja-marca.ok { border-color: rgba(52, 211, 153, 0.6); background: rgba(16, 185, 129, 0.1); }
+    .robot-destino {
+      position: absolute; width: 36px; height: 36px; z-index: 1; pointer-events: none;
+      border: 2px dashed rgba(96, 165, 250, 0.4); border-radius: 10px;
+      background: rgba(96, 165, 250, 0.06);
+    }
+    .robot {
+      position: absolute; width: 34px; height: 34px; z-index: 10;
+      background: linear-gradient(135deg, #60A5FA, #2563EB);
+      border-radius: 8px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+      transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .robot svg { width: 20px; height: 20px; color: white; }
+    .robot.activo { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+    #output { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+    .mision-card { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-900">
+
+  <nav class="fixed top-4 left-4 right-4 z-50 max-w-7xl mx-auto">
+    <div class="glass rounded-2xl border border-primary-100 px-6 py-3 flex items-center justify-between shadow-lg">
+      <a href="robolearn.html" class="flex items-center gap-2 group cursor-pointer">
+        <svg class="w-7 h-7 text-primary-600 transition-transform duration-300 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75H6.912a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H15M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3" />
+        </svg>
+        <span class="font-heading text-lg font-bold text-primary-800">RoboLearn · Bloques</span>
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="robolearn-contenido.html" class="text-sm text-primary-600 hover:text-primary-700 transition-colors cursor-pointer">Contenido</a>
+        <a href="robolearn.html" class="text-sm text-primary-600 hover:text-primary-700 transition-colors cursor-pointer">Inicio</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flex h-screen pt-20 pb-4 px-4 gap-4">
+
+    <!-- Blockly workspace -->
+    <div class="flex-1 bg-white rounded-2xl overflow-hidden border border-primary-100 shadow-lg flex flex-col min-w-0">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-primary-100 bg-primary-50/50">
+        <div class="flex items-center gap-3">
+          <div class="flex gap-1.5"><span class="w-3 h-3 rounded-full bg-red-400"></span><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="w-3 h-3 rounded-full bg-green-400"></span></div>
+          <span class="text-xs font-medium text-primary-400">desafio-cajas.xml</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnEjemplo" class="text-xs text-primary-500 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-100 transition-all cursor-pointer">Ejemplo</button>
+          <button id="btnLimpiar" class="text-xs text-primary-500 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-100 transition-all cursor-pointer">Limpiar</button>
+          <button id="btnEjecutar" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer shadow-md flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Ejecutar
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 relative"><div id="blocklyDiv"></div></div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div class="w-96 flex flex-col gap-4 min-w-[320px]">
+
+      <!-- Simulador -->
+      <div class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden flex-1 flex flex-col">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-700">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="text-sm font-medium text-white">Simulador</span>
+          </div>
+          <span id="estadoSim" class="text-xs text-emerald-400 font-medium flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span> Listo
+          </span>
+        </div>
+        <div id="simulador" class="flex-1 relative overflow-hidden"></div>
+        <div class="flex items-center gap-2 px-4 py-2 border-t border-slate-700 bg-slate-800/50">
+          <button id="btnReiniciar" class="text-xs text-slate-300 hover:text-white font-medium px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            Reiniciar
+          </button>
+          <span id="posInfo" class="text-xs text-slate-500 ml-auto">x: 0 · y: 0</span>
+        </div>
+      </div>
+
+      <!-- Misión -->
+      <div class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden mision-card">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-700">
+          <span class="text-sm font-medium text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Misión
+          </span>
+          <span id="progresoMision" class="text-xs text-slate-400 font-medium">0/2 cajas · 0/1 robot</span>
+        </div>
+        <div class="px-4 py-3 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded" style="background:linear-gradient(135deg,#D97706,#92400E);border:2px solid #F59E0B"></div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-300">Empuja las <span class="text-amber-400 font-semibold">cajas</span> hasta las marcas</p>
+              <div class="w-full bg-slate-700 rounded-full h-1.5 mt-1.5">
+                <div id="barraCajas" class="bg-amber-500 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded-lg" style="background:linear-gradient(135deg,#60A5FA,#2563EB)"></div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-300">Lleva el <span class="text-blue-400 font-semibold">robot</span> al destino</p>
+              <div class="w-full bg-slate-700 rounded-full h-1.5 mt-1.5">
+                <div id="barraRobot" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="misionCompletaMsg" class="hidden px-4 py-2.5 border-t border-slate-700 bg-slate-800 text-center">
+          <span class="text-emerald-400 font-bold text-sm">Misión cumplida</span>
+        </div>
+      </div>
+
+      <!-- Código -->
+      <div class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-700">
+          <span class="text-sm font-medium text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+            Código Generado
+          </span>
+          <button id="btnCopiar" class="text-xs text-slate-400 hover:text-white font-medium px-2 py-1 rounded hover:bg-slate-700 transition-all cursor-pointer">Copiar</button>
+        </div>
+        <pre id="output" class="p-4 text-xs text-slate-300 overflow-auto max-h-20 leading-relaxed">Los bloques generarán código aquí</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    //  CONFIGURACIÓN DEL MUNDO
+    // ============================================================
+    const P = 40;
+    const ANCHO = 280, ALTO = 240;
+
+    let robot = { x: 40, y: 40, dir: 90 };
+
+    const obstaculos = [];
+
+    let cajas = [
+      { x: 80, y: 40 },
+      { x: 80, y: 80 },
+    ];
+
+    const marcasCajas = [
+      { x: 200, y: 40 },
+      { x: 200, y: 80 },
+    ];
+
+    const destinoRobot = { x: 240, y: 200 };
+
+    let ejecutando = false;
+    let elRobot = null;
+
+    // ============================================================
+    //  DIBUJAR
+    // ============================================================
+    function dibujarMundo() {
+      const sim = document.getElementById('simulador');
+      sim.innerHTML = '';
+
+      // Grid
+      for (let x = 0; x < ANCHO; x += P)
+        for (let y = 0; y < ALTO; y += P) {
+          const d = document.createElement('div');
+          d.className = 'celda'; d.style.left = x + 'px'; d.style.bottom = y + 'px';
+          sim.appendChild(d);
+        }
+
+      // Obstáculos
+      obstaculos.forEach(([ox, oy]) => {
+        const d = document.createElement('div');
+        d.className = 'obstaculo'; d.style.left = ox + 'px'; d.style.bottom = oy + 'px';
+        sim.appendChild(d);
+      });
+
+      // Marcas para cajas
+      marcasCajas.forEach((m, i) => {
+        const d = document.createElement('div');
+        d.className = 'caja-marca'; d.id = 'cm-' + i;
+        d.style.left = m.x + 'px'; d.style.bottom = m.y + 'px';
+        d.textContent = '⬜';
+        sim.appendChild(d);
+      });
+
+      // Destino del robot
+      const dr = document.createElement('div');
+      dr.className = 'robot-destino'; dr.id = 'rd';
+      dr.style.left = destinoRobot.x + 'px'; dr.style.bottom = destinoRobot.y + 'px';
+      sim.appendChild(dr);
+
+      // Cajas
+      cajas.forEach((c, i) => {
+        const d = document.createElement('div');
+        d.className = 'caja'; d.id = 'c' + i;
+        d.style.left = c.x + 'px'; d.style.bottom = c.y + 'px';
+        d.textContent = i + 1;
+        sim.appendChild(d);
+      });
+
+      // Robot
+      elRobot = document.createElement('div');
+      elRobot.className = 'robot';
+      elRobot.id = 'rob';
+      elRobot.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75H6.912a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H15M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3" /></svg>';
+      sim.appendChild(elRobot);
+
+      posicionarRobot();
+      actualizarCajas();
+      actualizarUI();
+    }
+
+    function posicionarRobot() {
+      if (!elRobot) return;
+      elRobot.style.left = robot.x + 'px';
+      elRobot.style.bottom = robot.y + 'px';
+      elRobot.style.transform = 'rotate(' + (robot.dir - 90) + 'deg)';
+      document.getElementById('posInfo').textContent = 'x: ' + robot.x + ' · y: ' + robot.y;
+    }
+
+    function actualizarCajas() {
+      cajas.forEach((c, i) => {
+        const el = document.getElementById('c' + i);
+        if (!el) return;
+        el.style.left = c.x + 'px'; el.style.bottom = c.y + 'px';
+        const ok = marcasCajas.some(m => m.x === c.x && m.y === c.y);
+        el.className = 'caja' + (ok ? ' en-destino' : '');
+        el.textContent = ok ? '✓' : (i + 1);
+      });
+      marcasCajas.forEach((m, i) => {
+        const el = document.getElementById('cm-' + i);
+        if (!el) return;
+        const ok = cajas.some(c => c.x === m.x && c.y === m.y);
+        el.className = 'caja-marca' + (ok ? ' ok' : '');
+        el.textContent = '';
+      });
+    }
+
+    // ============================================================
+    //  FÍSICA
+    // ============================================================
+    function sigCelda(x, y, dir) {
+      let nx = x, ny = y;
+      if (dir === 0) ny += P;
+      else if (dir === 90) nx += P;
+      else if (dir === 180) ny -= P;
+      else nx -= P;
+      return { nx, ny };
+    }
+
+    function esValido(x, y, ignorarCajaIdx) {
+      if (x < 0 || x >= ANCHO || y < 0 || y >= ALTO) return false;
+      if (obstaculos.some(o => o[0] === x && o[1] === y)) return false;
+      if (cajas.some((c, i) => c.x === x && c.y === y && i !== ignorarCajaIdx)) return false;
+      return true;
+    }
+
+    function idxCaja(x, y) {
+      return cajas.findIndex(c => c.x === x && c.y === y);
+    }
+
+    // ============================================================
+    //  ACCIONES
+    // ============================================================
+    function avanzar() {
+      return new Promise(resolve => {
+        if (!ejecutando) { resolve(); return; }
+        const { nx, ny } = sigCelda(robot.x, robot.y, robot.dir);
+        const ic = idxCaja(nx, ny);
+        if (ic >= 0) {
+          const { nx: nx2, ny: ny2 } = sigCelda(nx, ny, robot.dir);
+          if (esValido(nx2, ny2, ic)) {
+            cajas[ic].x = nx2; cajas[ic].y = ny2;
+            robot.x = nx; robot.y = ny;
+            actualizarCajas();
+            posicionarRobot();
+          }
+        } else if (esValido(nx, ny)) {
+          robot.x = nx; robot.y = ny;
+          posicionarRobot();
+        }
+        verificar();
+        setTimeout(resolve, 400);
+      });
+    }
+
+    function retroceder() {
+      return new Promise(resolve => {
+        if (!ejecutando) { resolve(); return; }
+        const dirInv = (robot.dir + 180) % 360;
+        const { nx, ny } = sigCelda(robot.x, robot.y, dirInv);
+        const ic = idxCaja(nx, ny);
+        if (ic >= 0) {
+          const { nx: nx2, ny: ny2 } = sigCelda(nx, ny, dirInv);
+          if (esValido(nx2, ny2, ic)) {
+            cajas[ic].x = nx2; cajas[ic].y = ny2;
+            robot.x = nx; robot.y = ny;
+            actualizarCajas();
+            posicionarRobot();
+          }
+        } else if (esValido(nx, ny)) {
+          robot.x = nx; robot.y = ny;
+          posicionarRobot();
+        }
+        verificar();
+        setTimeout(resolve, 400);
+      });
+    }
+
+    function girarIzquierda() {
+      return new Promise(resolve => {
+        if (!ejecutando) { resolve(); return; }
+        robot.dir = (robot.dir - 90 + 360) % 360;
+        posicionarRobot();
+        setTimeout(resolve, 150);
+      });
+    }
+
+    function girarDerecha() {
+      return new Promise(resolve => {
+        if (!ejecutando) { resolve(); return; }
+        robot.dir = (robot.dir + 90) % 360;
+        posicionarRobot();
+        setTimeout(resolve, 150);
+      });
+    }
+
+    // ============================================================
+    //  SENSORES
+    // ============================================================
+    function hayObstaculo() {
+      const { nx, ny } = sigCelda(robot.x, robot.y, robot.dir);
+      if (nx < 0 || nx >= ANCHO || ny < 0 || ny >= ALTO) return true;
+      if (obstaculos.some(o => o[0] === nx && o[1] === ny)) return true;
+      return false;
+    }
+
+    function hayCaja() {
+      const { nx, ny } = sigCelda(robot.x, robot.y, robot.dir);
+      return cajas.some(c => c.x === nx && c.y === ny);
+    }
+
+    function algunaCajaEnDestino() {
+      return marcasCajas.some(m => cajas.some(c => c.x === m.x && c.y === m.y));
+    }
+
+    function todasCajasListas() {
+      return marcasCajas.every(m => cajas.some(c => c.x === m.x && c.y === m.y));
+    }
+
+    function robotEnDestino() {
+      return robot.x === destinoRobot.x && robot.y === destinoRobot.y;
+    }
+
+    // ============================================================
+    //  VERIFICACIÓN
+    // ============================================================
+    function verificar() {
+      const cajasOk = todasCajasListas();
+      const robOk = robotEnDestino();
+
+      const hechas = marcasCajas.filter(m => cajas.some(c => c.x === m.x && c.y === m.y)).length;
+      document.getElementById('progresoMision').textContent = hechas + '/' + marcasCajas.length + ' cajas · ' + (robOk ? '1' : '0') + '/1 robot';
+      document.getElementById('barraCajas').style.width = (hechas / marcasCajas.length * 100) + '%';
+      document.getElementById('barraRobot').style.width = (robOk ? 100 : 0) + '%';
+
+      if (cajasOk && robOk) {
+        document.getElementById('misionCompletaMsg').classList.remove('hidden');
+        document.getElementById('estadoSim').innerHTML = '<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Misión cumplida';
+        ejecutando = false;
+      }
+    }
+
+    function actualizarUI() {
+      verificar();
+    }
+
+    // ============================================================
+    //  REINICIAR
+    // ============================================================
+    function reiniciarSim() {
+      ejecutando = false;
+      robot = { x: 40, y: 40, dir: 90 };
+      cajas = [
+        { x: 80, y: 40 },
+        { x: 80, y: 80 },
+      ];
+      document.getElementById('misionCompletaMsg').classList.add('hidden');
+      document.getElementById('estadoSim').innerHTML = '<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span> Listo';
+      document.getElementById('output').textContent = '// Programa reiniciado';
+      posicionarRobot();
+      actualizarCajas();
+      actualizarUI();
+    }
+
+    // ============================================================
+    //  EJECUTAR
+    // ============================================================
+    async function ejecutarPrograma() {
+      if (ejecutando) return;
+      reiniciarSim();
+      const code = Blockly.JavaScript.workspaceToCode(workspace);
+      document.getElementById('output').textContent = code || '// No hay bloques';
+      if (!code.trim()) return;
+
+      ejecutando = true;
+      document.getElementById('estadoSim').innerHTML = '<span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span> Ejecutando...';
+
+      try {
+        const func = new Function(
+          'avanzar', 'retroceder', 'girarIzquierda', 'girarDerecha',
+          'hayObstaculo', 'hayCaja', 'algunaCajaEnDestino', 'todasCajasListas', 'robotEnDestino',
+          'return (async () => {\n' + code + '\n})()'
+        );
+        await func(avanzar, retroceder, girarIzquierda, girarDerecha,
+                   hayObstaculo, hayCaja, algunaCajaEnDestino, todasCajasListas, robotEnDestino);
+      } catch (e) {
+        document.getElementById('estadoSim').innerHTML = '<span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> Error';
+        console.error(e);
+      }
+      if (ejecutando) {
+        ejecutando = false;
+        document.getElementById('estadoSim').innerHTML = '<span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span> Terminado';
+      }
+    }
+
+    // ============================================================
+    //  BLOCKLY
+    // ============================================================
+    const toolbox = {
+      kind: 'categoryToolbox',
+      contents: [
+        { kind: 'category', name: 'Movimiento', colour: '#3B82F6', contents: [
+          { kind: 'block', type: 'mov_adelante' },
+          { kind: 'block', type: 'mov_atras' },
+          { kind: 'block', type: 'mov_girar_izq' },
+          { kind: 'block', type: 'mov_girar_der' },
+        ]},
+        { kind: 'category', name: 'Sensores', colour: '#22C55E', contents: [
+          { kind: 'block', type: 'sens_obstaculo' },
+          { kind: 'block', type: 'sens_caja' },
+          { kind: 'block', type: 'sens_caja_destino' },
+          { kind: 'block', type: 'sens_todas_cajas' },
+          { kind: 'block', type: 'sens_robot_destino' },
+        ]},
+        { kind: 'category', name: 'Control', colour: '#F59E0B', contents: [
+          { kind: 'block', type: 'controls_if' },
+          { kind: 'block', type: 'controls_repeat_ext' },
+          { kind: 'block', type: 'controls_whileUntil' },
+        ]},
+        { kind: 'category', name: 'Lógica', colour: '#EF4444', contents: [
+          { kind: 'block', type: 'logic_compare' },
+          { kind: 'block', type: 'logic_operation' },
+          { kind: 'block', type: 'logic_boolean' },
+          { kind: 'block', type: 'logic_negate' },
+        ]},
+        { kind: 'category', name: 'Matemáticas', colour: '#8B5CF6', contents: [
+          { kind: 'block', type: 'math_number' },
+        ]},
+      ]
+    };
+
+    const colores = { mov: '#3B82F6', sens: '#22C55E' };
+
+    Blockly.Blocks['mov_adelante'] = { init() { this.appendDummyInput().appendField('avanzar'); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(colores.mov); } };
+    Blockly.Blocks['mov_atras'] = { init() { this.appendDummyInput().appendField('retroceder'); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(colores.mov); } };
+    Blockly.Blocks['mov_girar_izq'] = { init() { this.appendDummyInput().appendField('girar izquierda'); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(colores.mov); } };
+    Blockly.Blocks['mov_girar_der'] = { init() { this.appendDummyInput().appendField('girar derecha'); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(colores.mov); } };
+    Blockly.Blocks['sens_obstaculo'] = { init() { this.appendDummyInput().appendField('¿hay obstáculo?'); this.setOutput(true, 'Boolean'); this.setColour(colores.sens); } };
+    Blockly.Blocks['sens_caja'] = { init() { this.appendDummyInput().appendField('¿hay caja?'); this.setOutput(true, 'Boolean'); this.setColour(colores.sens); } };
+    Blockly.Blocks['sens_caja_destino'] = { init() { this.appendDummyInput().appendField('¿caja en destino?'); this.setOutput(true, 'Boolean'); this.setColour(colores.sens); } };
+    Blockly.Blocks['sens_todas_cajas'] = { init() { this.appendDummyInput().appendField('¿todas cajas listas?'); this.setOutput(true, 'Boolean'); this.setColour(colores.sens); } };
+    Blockly.Blocks['sens_robot_destino'] = { init() { this.appendDummyInput().appendField('¿robot en destino?'); this.setOutput(true, 'Boolean'); this.setColour(colores.sens); } };
+
+    Blockly.JavaScript['mov_adelante'] = function() { return 'await avanzar();\n'; };
+    Blockly.JavaScript['mov_atras'] = function() { return 'await retroceder();\n'; };
+    Blockly.JavaScript['mov_girar_izq'] = function() { return 'await girarIzquierda();\n'; };
+    Blockly.JavaScript['mov_girar_der'] = function() { return 'await girarDerecha();\n'; };
+    Blockly.JavaScript['sens_obstaculo'] = function() { return ['hayObstaculo()', Blockly.JavaScript.ORDER_ATOMIC]; };
+    Blockly.JavaScript['sens_caja'] = function() { return ['hayCaja()', Blockly.JavaScript.ORDER_ATOMIC]; };
+    Blockly.JavaScript['sens_caja_destino'] = function() { return ['algunaCajaEnDestino()', Blockly.JavaScript.ORDER_ATOMIC]; };
+    Blockly.JavaScript['sens_todas_cajas'] = function() { return ['todasCajasListas()', Blockly.JavaScript.ORDER_ATOMIC]; };
+    Blockly.JavaScript['sens_robot_destino'] = function() { return ['robotEnDestino()', Blockly.JavaScript.ORDER_ATOMIC]; };
+
+    const workspace = Blockly.inject('blocklyDiv', {
+      toolbox,
+      grid: { spacing: 20, length: 3, colour: '#DBEAFE', snap: true },
+      zoom: { controls: true, wheel: true, startScale: 0.9 },
+      trashcan: true,
+      move: { scrollbars: true, drag: true, wheel: true },
+    });
+
+    // ============================================================
+    //  EVENTOS
+    // ============================================================
+    function cargarEjemplo() {
+      workspace.clear();
+      const xml = '<xml xmlns="https://developers.google.com/blockly/xml">' +
+        '<block type="controls_repeat_ext" x="20" y="20">' +
+          '<value name="TIMES"><block type="math_number"><field name="NUM">4</field></block></value>' +
+          '<statement name="DO"><block type="mov_adelante"></block></statement>' +
+        '</block>' +
+        '<block type="mov_girar_izq" x="20" y="120"></block>' +
+        '<block type="controls_repeat_ext" x="20" y="160">' +
+          '<value name="TIMES"><block type="math_number"><field name="NUM">3</field></block></value>' +
+          '<statement name="DO"><block type="mov_adelante"></block></statement>' +
+        '</block>' +
+        '<block type="mov_girar_izq" x="20" y="260"></block>' +
+        '<block type="controls_repeat_ext" x="20" y="300">' +
+          '<value name="TIMES"><block type="math_number"><field name="NUM">3</field></block></value>' +
+          '<statement name="DO"><block type="mov_adelante"></block></statement>' +
+        '</block>' +
+        '<block type="mov_girar_izq" x="20" y="400"></block>' +
+        '<block type="controls_repeat_ext" x="20" y="440">' +
+          '<value name="TIMES"><block type="math_number"><field name="NUM">2</field></block></value>' +
+          '<statement name="DO"><block type="mov_adelante"></block></statement>' +
+        '</block>' +
+      '</xml>';
+      Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(xml), workspace);
+      document.getElementById('output').textContent = '// Ejemplo cargado. Presiona Ejecutar.';
+    }
+
+    document.getElementById('btnEjemplo').addEventListener('click', cargarEjemplo);
+    document.getElementById('btnEjecutar').addEventListener('click', ejecutarPrograma);
+    document.getElementById('btnLimpiar').addEventListener('click', () => {
+      workspace.clear();
+      document.getElementById('output').textContent = '// Arrastra bloques al área de trabajo';
+    });
+    document.getElementById('btnReiniciar').addEventListener('click', reiniciarSim);
+    document.getElementById('btnCopiar').addEventListener('click', () => {
+      const code = document.getElementById('output').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('btnCopiar').textContent = 'Copiado!';
+        setTimeout(() => document.getElementById('btnCopiar').textContent = 'Copiar', 1500);
+      });
+    });
+    workspace.addChangeListener(() => {
+      const code = Blockly.JavaScript.workspaceToCode(workspace);
+      document.getElementById('output').textContent = code || '// Arrastra bloques al área de trabajo';
+    });
+
+    // ============================================================
+    //  INICIO
+    // ============================================================
+    dibujarMundo();
+  </script>
+
+</body>
+</html>
